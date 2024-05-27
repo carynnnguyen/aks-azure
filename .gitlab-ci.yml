@@ -1,0 +1,36 @@
+image:
+  name: hashicorp/terraform:${TERRAFORM_VERSION}
+  entrypoint: ["/bin/sh", "-c"]
+
+.rules_deploy_eks:
+  rules:
+    - if: $DOCKER_PERIODIC_CLEANUP == "true"
+      when: never
+    - if: $CI_DEPLOY_FREEZE != null
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      allow_failure: true
+    - when: never
+
+
+variables:
+  TERRAFORM_VERSION: 1.1.2
+
+.terraform-ver-init: &terraform-ver-init
+  - terraform version
+  - terraform init
+
+test terraform validate:
+  extends: ".rules_tf"
+  needs: []
+  stage: test
+  before_script:
+    - *terraform-ver-init
+  script:
+    - terraform validate
+
+test terraform format:
+  stage: test
+  script:
+    - terraform fmt -list=true -write=false -diff=true -check=true -recursive
